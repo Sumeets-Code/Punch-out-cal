@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Punch-out time</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap">
+<style>
+:root{--bg:#e9eef5;--card:#fff;--ink:#16213a;--mute:#5d6b85;--line:#cfd8e6;--acc:#1f4fd8;--accsoft:#dbe5ff;--on:#fff;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1626;--card:#18213a;--ink:#e8edf8;--mute:#9aa8c4;--line:#2d3a5a;--acc:#7da2ff;--accsoft:#25365f;--on:#0f1626}}
+:root[data-theme="dark"]{--bg:#0f1626;--card:#18213a;--ink:#e8edf8;--mute:#9aa8c4;--line:#2d3a5a;--acc:#7da2ff;--accsoft:#25365f;--on:#0f1626}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh;display:grid;place-items:center;padding:20px}
+main{width:100%;max-width:460px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:26px 24px}
+h1{font-size:1.15rem;font-weight:600;margin:0 0 20px}
+.result{padding:18px 18px 20px;background:var(--accsoft);border-radius:14px;margin-bottom:22px}
+.result small{color:var(--mute);font-size:.9rem}
+.big{font-size:3.4rem;font-weight:800;line-height:1.05;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--acc);margin:4px 0 2px}
+.big span{font-size:1.3rem;font-weight:600;margin-left:6px}
+.sub{font-size:.95rem;min-height:1.3em}
+.bar{position:relative;height:10px;border-radius:5px;background:var(--card);margin-top:16px;overflow:hidden}
+.bar i{position:absolute;top:0;bottom:0;background:var(--acc);border-radius:5px}
+.ticks{display:flex;justify-content:space-between;font-size:.75rem;color:var(--mute);margin-top:4px}
+label,.lab{display:block;font-size:.9rem;color:var(--mute);margin:0 0 6px}
+.row{display:flex;gap:10px;align-items:stretch;margin-bottom:18px}
+select,input[type=number]{font:inherit;font-size:1.1rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0;flex:1}
+.colon{align-self:center;font-weight:600}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--bg)}
+.seg button{font:inherit;font-size:1rem;border:0;background:none;color:var(--ink);padding:10px 16px;cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--acc);color:var(--on);font-weight:600}
+.now{font:inherit;font-size:.9rem;color:var(--acc);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;margin-bottom:18px}
+.hint{font-size:.85rem;color:var(--mute);margin:-12px 0 18px}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+</style>
+</head>
+<body>
+<main>
+  <h1>When can I punch out?</h1>
+
+  <div class="result" aria-live="polite">
+    <small>Punch out at</small>
+    <div class="big" id="out">--:--</div>
+    <div class="sub" id="sub"></div>
+    <div class="bar"><i id="fill"></i></div>
+    <div class="ticks"><span id="t0">12 AM</span><span id="t1">6</span><span id="t2">12 PM</span><span id="t3">6</span><span id="t4">12 AM</span></div>
+  </div>
+
+  <div class="lab">Punch-in time</div>
+  <div class="row">
+    <select id="hh" aria-label="Hour"></select>
+    <span class="colon">:</span>
+    <select id="mm" aria-label="Minutes"></select>
+    <div class="seg" id="ap" role="group" aria-label="AM or PM">
+      <button type="button" data-v="am">AM</button><button type="button" data-v="pm">PM</button>
+    </div>
+  </div>
+  <button class="now" id="now" type="button">Use current time</button>
+
+  <label for="hrs">Hours to stay in office</label>
+  <div class="row" style="margin-bottom:6px"><input id="hrs" type="number" min="0.25" max="24" step="0.25" value="8.5" inputmode="decimal"></div>
+  <p class="hint" id="hint"></p>
+
+  <div class="lab">Clock format</div>
+  <div class="seg" id="fmt" role="group" aria-label="Clock format">
+    <button type="button" data-v="12" style="flex:1">12-hour</button><button type="button" data-v="24" style="flex:1">24-hour</button>
+  </div>
+</main>
+
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id)};
+  var fmt="12", t=9*60, hours=8.5; // t = punch-in minutes since midnight
+  try{var s=localStorage.getItem("clockFmt"); if(s==="12"||s==="24") fmt=s;}catch(e){}
+
+  var pad=function(n){return (n<10?"0":"")+n};
+  function show(min){ // min within one day
+    var h=Math.floor(min/60)%24, m=min%60;
+    if(fmt==="24") return {t:pad(h)+":"+pad(m),s:""};
+    return {t:(h%12||12)+":"+pad(m),s:h<12?"AM":"PM"};
+  }
+  function fillSelects(){
+    var hh=$("hh"), html="";
+    if(fmt==="12"){for(var i=1;i<=12;i++) html+="<option value='"+i+"'>"+i+"</option>";}
+    else{for(var j=0;j<24;j++) html+="<option value='"+j+"'>"+pad(j)+"</option>";}
+    hh.innerHTML=html;
+    if(!$("mm").options.length){var mh="";for(var k=0;k<60;k++) mh+="<option value='"+k+"'>"+pad(k)+"</option>";$("mm").innerHTML=mh;}
+  }
+  function syncInputs(){
+    var h=Math.floor(t/60), m=t%60;
+    $("hh").value=fmt==="12"?(h%12||12):h;
+    $("mm").value=m;
+    $("ap").style.display=fmt==="12"?"flex":"none";
+    var pm=h>=12;
+    [].forEach.call($("ap").children,function(b){b.setAttribute("aria-pressed",String((b.dataset.v==="pm")===pm))});
+    [].forEach.call($("fmt").children,function(b){b.setAttribute("aria-pressed",String(b.dataset.v===fmt))});
+  }
+  function fmtDur(mins){var h=Math.floor(mins/60),m=mins%60;return (h?h+"h ":"")+(m||!h?m+"m":"")}
+  function render(){
+    var need=Math.round(hours*60);
+    var valid=isFinite(need)&&need>0;
+    $("t0").textContent=fmt==="24"?"00":"12 AM";$("t1").textContent=fmt==="24"?"06":"6";
+    $("t2").textContent=fmt==="24"?"12":"12 PM";$("t3").textContent=fmt==="24"?"18":"6";$("t4").textContent=fmt==="24"?"24":"12 AM";
+    if(!valid){$("out").textContent="--:--";$("sub").textContent="Enter the hours you need to stay.";$("hint").textContent="";$("fill").style.width="0";return;}
+    var end=t+need, o=show(end%1440), days=Math.floor(end/1440);
+    $("out").innerHTML=o.t+(o.s?"<span>"+o.s+"</span>":"");
+    $("hint").textContent=hours+" hours = "+fmtDur(need);
+    var i=show(t), sub="In at "+i.t+(i.s?" "+i.s:"")+" · "+fmtDur(need)+(days>0?" · next day":"");
+    var d=new Date(), nowM=d.getHours()*60+d.getMinutes()+d.getSeconds()/60;
+    if(nowM>=t){var left=Math.ceil(end-nowM);sub=left>0?(left>need?sub:fmtDur(left)+" left · "+sub):"You can punch out now · "+sub;}
+    $("sub").textContent=sub;
+    var f=$("fill"), a=t/1440*100, b=Math.min(end,1440)/1440*100;
+    f.style.left=a+"%";f.style.width=(b-a)+"%";
+  }
+  function update(){syncInputs();render();}
+
+  $("hh").addEventListener("change",function(){
+    var v=+this.value, pm=Math.floor(t/60)>=12;
+    var h=fmt==="12"?(v%12)+(pm?12:0):v;
+    t=h*60+t%60;update();
+  });
+  $("mm").addEventListener("change",function(){t=Math.floor(t/60)*60+(+this.value);update();});
+  $("ap").addEventListener("click",function(e){
+    var v=e.target.dataset&&e.target.dataset.v; if(!v) return;
+    var h=Math.floor(t/60)%12+(v==="pm"?12:0); t=h*60+t%60;update();
+  });
+  $("fmt").addEventListener("click",function(e){
+    var v=e.target.dataset&&e.target.dataset.v; if(!v||v===fmt) return;
+    fmt=v;try{localStorage.setItem("clockFmt",fmt);}catch(x){}
+    fillSelects();update();
+  });
+  $("hrs").addEventListener("input",function(){hours=parseFloat(this.value);render();});
+  $("now").addEventListener("click",function(){var d=new Date();t=d.getHours()*60+d.getMinutes();update();});
+
+  fillSelects();update();
+  setInterval(render,30000);
+})();
+</script>
+</body>
+</html>
