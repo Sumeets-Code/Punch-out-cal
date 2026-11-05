@@ -12,33 +12,52 @@ box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:en
 :root[data-theme="dark"]{--bg:#0f1626;--card:#18213a;--ink:#e8edf8;--mute:#9aa8c4;--line:#2d3a5a;--acc:#7da2ff;--accsoft:#25365f;--on:#0f1626}
 *{box-sizing:border-box}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh;display:grid;place-items:center;padding:20px}
-main{width:100%;max-width:460px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:26px 24px}
-h1{font-size:1.15rem;font-weight:600;margin:0 0 20px}
-.result{padding:18px 18px 20px;background:var(--accsoft);border-radius:14px;margin-bottom:22px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif;height:100vh;height:100dvh;display:flex;align-items:center;justify-content:center;padding:12px}
+html,body{height:100%;overflow:hidden}
+main{width:100%;max-width:920px;max-height:100%;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px 20px;display:flex;flex-direction:column;min-height:0}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+h1{font-size:1.1rem;font-weight:600;margin:0}
+.seg.tabs{display:none}
+.panels{display:grid;grid-template-columns:1fr 1fr;gap:24px;flex:1;min-height:0}
+.panel{min-height:0;display:flex;flex-direction:column}
+@media (max-width:799px){main{max-width:460px}.panels{grid-template-columns:1fr}.panel:not(.on){display:none}.seg.tabs{display:flex}.track{border-left:0!important;padding-left:0!important}}
+@media (max-height:640px){.ticks,.bar{display:none}.hint{display:none}}
+.result{padding:14px 16px;background:var(--accsoft);border-radius:14px;margin-bottom:14px}
 .result small{color:var(--mute);font-size:.9rem}
-.big{font-size:3.4rem;font-weight:800;line-height:1.05;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--acc);margin:4px 0 2px}
+.big{font-size:clamp(2.3rem,9vh,3.4rem);font-weight:800;line-height:1.05;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--acc);margin:4px 0 2px}
 .big span{font-size:1.3rem;font-weight:600;margin-left:6px}
 .sub{font-size:.95rem;min-height:1.3em}
 .bar{position:relative;height:10px;border-radius:5px;background:var(--card);margin-top:16px;overflow:hidden}
 .bar i{position:absolute;top:0;bottom:0;background:var(--acc);border-radius:5px}
 .ticks{display:flex;justify-content:space-between;font-size:.75rem;color:var(--mute);margin-top:4px}
 label,.lab{display:block;font-size:.9rem;color:var(--mute);margin:0 0 6px}
-.row{display:flex;gap:10px;align-items:stretch;margin-bottom:18px}
+.row{display:flex;gap:10px;align-items:stretch;margin-bottom:12px}
 select,input[type=number]{font:inherit;font-size:1.1rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0;flex:1}
 .colon{align-self:center;font-weight:600}
 .seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--bg)}
 .seg button{font:inherit;font-size:1rem;border:0;background:none;color:var(--ink);padding:10px 16px;cursor:pointer}
 .seg button[aria-pressed=true]{background:var(--acc);color:var(--on);font-weight:600}
-.now{font:inherit;font-size:.9rem;color:var(--acc);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;margin-bottom:18px}
-.hint{font-size:.85rem;color:var(--mute);margin:-12px 0 18px}
+.now{font:inherit;font-size:.9rem;color:var(--acc);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;margin-bottom:12px;align-self:flex-start}
+.hint{font-size:.85rem;color:var(--mute);margin:-6px 0 12px}
 :focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+[hidden]{display:none!important}
+.track{border-left:1px solid var(--line);padding-left:24px}
+#log{display:flex;flex-direction:column;min-height:0;flex:1}
+input[type=email],input[type=password]{font:inherit;font-size:1rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0;flex:1}
+.btn{font:inherit;font-size:.95rem;font-weight:600;flex:1;border:0;border-radius:10px;padding:11px 12px;cursor:pointer;background:var(--acc);color:var(--on)}
+.btn.alt{background:var(--accsoft);color:var(--acc)}
+#rows{list-style:none;margin:0;padding:0;flex:1;min-height:0;overflow-y:auto}
+#rows li{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:.95rem;font-variant-numeric:tabular-nums}
+#rows li span:first-child{color:var(--mute)}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 <main>
-  <h1>When can I punch out?</h1>
-
+  <div class="top"><h1>When can I punch out?</h1>
+    <div class="seg tabs" id="tabs" role="group" aria-label="View"><button type="button" data-p="p1" aria-pressed="true">Calculator</button><button type="button" data-p="p2" aria-pressed="false">Log</button></div></div>
+  <div class="panels">
+  <section class="panel on" id="p1">
   <div class="result" aria-live="polite">
     <small>Punch out at</small>
     <div class="big" id="out">--:--</div>
@@ -66,12 +85,30 @@ select,input[type=number]{font:inherit;font-size:1.1rem;color:var(--ink);backgro
   <div class="seg" id="fmt" role="group" aria-label="Clock format">
     <button type="button" data-v="12" style="flex:1">12-hour</button><button type="button" data-v="24" style="flex:1">24-hour</button>
   </div>
+  </section>
+
+  <section class="panel track" id="p2">
+    <div class="lab">Punch log</div>
+    <p class="hint" id="tmsg" style="margin:0 0 12px"></p>
+    <div id="auth" hidden>
+      <div class="row"><input id="em" type="email" placeholder="Email" autocomplete="email"></div>
+      <div class="row"><input id="pw" type="password" placeholder="Password" autocomplete="current-password"></div>
+      <div class="row"><button class="btn" id="signin" type="button">Sign in</button><button class="btn alt" id="signup" type="button">Create account</button></div>
+    </div>
+    <div id="log" hidden>
+      <div class="row"><button class="btn" id="save" type="button">Save today’s punch-in</button><button class="btn alt" id="outnow" type="button">Punch out now</button></div>
+      <ul id="rows"></ul>
+    </div>
+    <button class="now" id="signout" type="button" hidden>Sign out</button>
+  </section>
+  </div>
 </main>
 
 <script>
 (function(){
   var $=function(id){return document.getElementById(id)};
   var fmt="12", t=9*60, hours=8.5; // t = punch-in minutes since midnight
+  try{var sv=JSON.parse(localStorage.getItem("punchState")||"{}");if(typeof sv.t==="number")t=sv.t;if(sv.hours>0)hours=sv.hours;}catch(e){}
   try{var s=localStorage.getItem("clockFmt"); if(s==="12"||s==="24") fmt=s;}catch(e){}
 
   var pad=function(n){return (n<10?"0":"")+n};
@@ -98,6 +135,7 @@ select,input[type=number]{font:inherit;font-size:1.1rem;color:var(--ink);backgro
   }
   function fmtDur(mins){var h=Math.floor(mins/60),m=mins%60;return (h?h+"h ":"")+(m||!h?m+"m":"")}
   function render(){
+    try{localStorage.setItem("punchState",JSON.stringify({t:t,hours:hours}));}catch(e){}
     var need=Math.round(hours*60);
     var valid=isFinite(need)&&need>0;
     $("t0").textContent=fmt==="24"?"00":"12 AM";$("t1").textContent=fmt==="24"?"06":"6";
@@ -128,12 +166,70 @@ select,input[type=number]{font:inherit;font-size:1.1rem;color:var(--ink);backgro
   $("fmt").addEventListener("click",function(e){
     var v=e.target.dataset&&e.target.dataset.v; if(!v||v===fmt) return;
     fmt=v;try{localStorage.setItem("clockFmt",fmt);}catch(x){}
-    fillSelects();update();
+    fillSelects();update();renderRows();
   });
   $("hrs").addEventListener("input",function(){hours=parseFloat(this.value);render();});
   $("now").addEventListener("click",function(){var d=new Date();t=d.getHours()*60+d.getMinutes();update();});
 
-  fillSelects();update();
+  /* ---- Supabase tracking: fill these two in (Project Settings > API) ---- */
+  var SUPABASE_URL="https://rfrieqhuhsjkbgmqgjvi.supabase.co", SUPABASE_ANON_KEY="sb_publishable_6Bd9MKLEDnDMk6CynA5c4w_WX1aNtI4";
+  var sb=(SUPABASE_URL&&SUPABASE_ANON_KEY&&window.supabase)?supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
+  var last=[];
+  var today=function(){var d=new Date();return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())};
+  var hm=function(m){m=((m%1440)+1440)%1440;return pad(Math.floor(m/60))+":"+pad(m%60)};
+  var toMin=function(s){return +s.slice(0,2)*60+ +s.slice(3,5)};
+  var label=function(s){var o=show(toMin(s));return o.t+(o.s?" "+o.s:"")};
+  function msg(s){$("tmsg").textContent=s}
+  function renderRows(){
+    $("rows").innerHTML=last.map(function(r){
+      var inM=toMin(r.punch_in), done=!!r.actual_out, outM=toMin(done?r.actual_out:r.expected_out);
+      if(outM<inM) outM+=1440;
+      return "<li><span>"+r.work_date.slice(5)+"</span><span>"+label(r.punch_in)+" to "+label(done?r.actual_out:r.expected_out)+(done?"":" (expected)")+"</span><span>"+fmtDur(outM-inM)+"</span></li>";
+    }).join("");
+  }
+  async function refresh(){
+    if(!sb){$("auth").hidden=true;$("log").hidden=true;msg(window.supabase?"Add your Supabase URL and anon key at the top of the tracking code to turn on the log.":"Couldn’t load the Supabase library. Check your internet connection.");return;}
+    var s=(await sb.auth.getSession()).data.session;
+    $("auth").hidden=!!s;$("log").hidden=!s;$("signout").hidden=!s;
+    if(!s){msg("Sign in to save your punches.");return;}
+    var q=await sb.from("punches").select("*").order("work_date",{ascending:false}).limit(14);
+    if(q.error){msg(q.error.message);return;}
+    last=q.data;renderRows();msg(last.length?"":"No punches saved yet.");
+  }
+  async function doAuth(up){
+    var cred={email:$("em").value.trim(),password:$("pw").value};
+    if(!cred.email||cred.password.length<6){msg("Enter an email and a password of at least 6 characters.");return;}
+    msg(up?"Creating account…":"Signing in…");
+    try{
+      var r=up?await sb.auth.signUp(cred):await sb.auth.signInWithPassword(cred);
+      if(r.error){msg(r.error.message);return;}
+      if(!r.data.session){msg("Check your inbox to confirm your email, then sign in.");return;}
+      await refresh();
+    }catch(e){msg("Couldn’t reach Supabase. Check the URL, the key and your connection.");}
+  }
+  $("signin").addEventListener("click",function(){if(sb)doAuth(false)});
+  $("signup").addEventListener("click",function(){if(sb)doAuth(true)});
+  $("signout").addEventListener("click",async function(){await sb.auth.signOut();last=[];renderRows();refresh();});
+  $("save").addEventListener("click",async function(){
+    var need=Math.round(hours*60);
+    if(!(need>0)){msg("Enter the hours you need to stay first.");return;}
+    var r=await sb.from("punches").upsert({work_date:today(),punch_in:hm(t),expected_out:hm(t+need),required_minutes:need},{onConflict:"user_id,work_date"});
+    await refresh();msg(r.error?r.error.message:"Saved today’s punch-in.");
+  });
+  $("outnow").addEventListener("click",async function(){
+    var d=new Date();
+    var r=await sb.from("punches").update({actual_out:pad(d.getHours())+":"+pad(d.getMinutes())}).eq("work_date",today()).select();
+    await refresh();
+    msg(r.error?r.error.message:(r.data.length?"Punch-out logged.":"Save today’s punch-in first."));
+  });
+
+  $("tabs").addEventListener("click",function(e){
+    var p=e.target.dataset&&e.target.dataset.p; if(!p) return;
+    [].forEach.call($("tabs").children,function(b){b.setAttribute("aria-pressed",String(b.dataset.p===p))});
+    $("p1").classList.toggle("on",p==="p1");$("p2").classList.toggle("on",p==="p2");
+  });
+
+  fillSelects();$("hrs").value=hours;update();refresh();
   setInterval(render,30000);
 })();
 </script>
